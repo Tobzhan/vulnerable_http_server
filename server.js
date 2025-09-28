@@ -1,29 +1,53 @@
+require('dotenv').config(); // loads .env in development if present
 const express = require('express');
-const fs = require('fs');
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
-const API_KEY = 'app_sec4';
+// Load secrets/config from environment variables (never commit .env to git)
+const API_KEY = process.env.API_KEY || null;
+const DB_USER = process.env.DB_USER || null;
+const DB_PASSWORD = process.env.DB_PASSWORD || null;
+const THIRD_PARTY_API_KEY = process.env.THIRD_PARTY_API_KEY || null;
 
-const cfg = JSON.parse(fs.readFileSync('./config/secrets.json', 'utf8'));
+const cfg = {
+  dbUser: DB_USER,
+  // dbPassword intentionally not included when sending responses
+  thirdPartyApiKey: THIRD_PARTY_API_KEY ? '[REDACTED]' : null
+};
+
+function checkRequired() {
+  const missing = [];
+  if (!API_KEY) missing.push('API_KEY');
+  if (!DB_PASSWORD) missing.push('DB_PASSWORD');
+  if (missing.length) {
+    console.warn(`Warning: missing environment variables: ${missing.join(', ')}. Using placeholders for demo.`);
+  }
+}
+checkRequired();
 
 app.get('/', (req, res) => {
   if (req.query.boom) {
-    throw new Error('Intentional failure showing internal details: secret=' + cfg.dbPassword);
+    const secret = DB_PASSWORD || '[no-db-password]';
+    throw new Error('Intentional failure (server-side).'); // don't include secret here
   }
 
+  // Respond with safe, non-sensitive info
   res.json({
     message: 'Hello from Server',
-    apiKey: API_KEY,
-    configLoaded: cfg
+    Database_username: DB_USER 
   });
 });
 
 app.use((err, req, res, next) => {
-  res.status(500).send({
-    error: err.message,
-    stack: err.stack
+  console.error('Internal error:', {
+    message: err.message,
+    stack: err.stack,
+    url: req.originalUrl,
+    method: req.method
+    // Do NOT include cfg or DB_PASSWORD here
   });
+
+  res.status(500).json({ error: 'Internal server error' });
 });
 
 app.listen(port, () => {
