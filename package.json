@@ -1,0 +1,13 @@
+{
+  "name": "small-http-server-demo",
+  "version": "0.1.0",
+  "description": "Small HTTP server demo showing insecure practices and fixes",
+  "main": "server_vulnerable.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "dotenv": "^16.0.0"
+  }
+}
